@@ -1,14 +1,13 @@
 package config
 
 import (
+	"bufio"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/joho/godotenv"
 )
 
-// Config holds the application configuration loaded from .env
+// Config holds the application configuration
 type Config struct {
 	WorkNotesLocation string
 	WorkplaceName     string
@@ -17,10 +16,11 @@ type Config struct {
 	AIModel           string
 }
 
-// Load reads the configuration from .env file
+// Load reads the configuration from ~/.config/worklog/config
 func Load() (*Config, error) {
-	// Try to load .env from current directory or executable directory
-	_ = godotenv.Load()
+	// Load config from ~/.config/worklog/config
+	configPath := getConfigPath()
+	loadConfigFile(configPath)
 
 	cfg := &Config{
 		WorkNotesLocation: getEnv("WORK_NOTES_LOCATION", "~/Documents/obsidian-notes/Inbox/work"),
@@ -34,6 +34,48 @@ func Load() (*Config, error) {
 	cfg.WorkNotesLocation = expandPath(cfg.WorkNotesLocation)
 
 	return cfg, nil
+}
+
+// getConfigPath returns the path to the config file
+func getConfigPath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(home, ".config", "worklog", "config")
+}
+
+// loadConfigFile reads a key=value config file and sets environment variables
+func loadConfigFile(path string) {
+	file, err := os.Open(path)
+	if err != nil {
+		return // Config file doesn't exist, use defaults
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// Parse key=value
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+
+		// Only set if not already set in environment
+		if _, exists := os.LookupEnv(key); !exists {
+			os.Setenv(key, value)
+		}
+	}
 }
 
 // getEnv retrieves an environment variable or returns a default value

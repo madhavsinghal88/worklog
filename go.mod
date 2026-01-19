@@ -3,7 +3,6 @@ module github.com/sandepten/work-obsidian-noter
 go 1.25.6
 
 require (
-	github.com/joho/godotenv v1.5.1
 	github.com/manifoldco/promptui v0.9.0
 	github.com/spf13/cobra v1.10.2
 )

@@ -43,15 +43,32 @@ make build
 
 ## Configuration
 
-Create a `.env` file in the project root (or where you run the CLI):
+Worklog uses a config file at `~/.config/worklog/config` (similar to Ghostty):
 
-```env
+```bash
+# Create the config directory
+mkdir -p ~/.config/worklog
+
+# Create your config file
+cat > ~/.config/worklog/config << 'EOF'
+# Worklog Configuration
+
+# Path to your Obsidian notes folder
 WORK_NOTES_LOCATION=~/Documents/obsidian-notes/Inbox/work
-WORKPLACE_NAME=YourCompany
+
+# Name of your workplace (used in filenames and tags)
+WORKPLACE_NAME=Jio
+
+# OpenCode server URL for AI summaries
 OPENCODE_SERVER=http://127.0.0.1:4096
+
+# AI provider and model for summaries
 AI_PROVIDER=github-copilot
 AI_MODEL=claude-sonnet-4
+EOF
 ```
+
+### Configuration Options
 
 | Variable | Description | Default |
 |----------|-------------|---------|
@@ -60,6 +77,8 @@ AI_MODEL=claude-sonnet-4
 | `OPENCODE_SERVER` | URL of your OpenCode server for AI summaries | `http://127.0.0.1:4096` |
 | `AI_PROVIDER` | AI provider ID for summaries | `github-copilot` |
 | `AI_MODEL` | AI model ID for summaries | `claude-sonnet-4` |
+
+> **Note:** Environment variables take precedence over the config file, so you can override settings if needed.
 
 ## CLI Commands
 
@@ -209,7 +228,6 @@ Daily workflow complete! Use 'worklog add "task"' to add new items.
 ## Dependencies
 
 - [spf13/cobra](https://github.com/spf13/cobra) - CLI framework
-- [joho/godotenv](https://github.com/joho/godotenv) - Environment variable loading
 - [manifoldco/promptui](https://github.com/manifoldco/promptui) - Interactive prompts
 
 ## License
