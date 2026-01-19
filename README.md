@@ -20,12 +20,26 @@ cd work-obsidian-noter
 # Install dependencies
 go mod tidy
 
-# Build the CLI
-go build -o noter .
+# Build and install (creates symlink in ~/.local/bin)
+make install
 
-# (Optional) Install globally
-go install .
+# Or just build without installing
+make build
 ```
+
+> **Note:** Make sure `~/.local/bin` is in your PATH. Add this to your `~/.bashrc` or `~/.zshrc`:
+> ```bash
+> export PATH="$HOME/.local/bin:$PATH"
+> ```
+
+### Makefile Commands
+
+| Command | Description |
+|---------|-------------|
+| `make build` | Build the `noter` binary |
+| `make install` | Build and create symlink in `~/.local/bin` |
+| `make clean` | Remove binary and symlink |
+| `make help` | Show available commands |
 
 ## Configuration
 
