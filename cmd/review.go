@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sandepten/work-obsidian-noter/internal/notes"
+	"github.com/sandepten/work-obsidian-noter/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -36,15 +37,22 @@ func runReview(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	fmt.Printf("Reviewing note: %s (Date: %s)\n\n", filepath.Base(previousNote.FilePath), previousNote.Date.Format("2006-01-02"))
+	fmt.Println()
+	fmt.Println(ui.TitleStyle.Render("📝 Review Previous Note"))
+	fmt.Println(ui.InfoStyle.Render(fmt.Sprintf("📄 %s (%s)", filepath.Base(previousNote.FilePath), previousNote.Date.Format("January 2, 2006"))))
+	fmt.Println(ui.RenderDivider(50))
+	fmt.Println()
 
 	if !previousNote.HasPendingWork() {
-		prompter.DisplayMessage("No pending items to review.")
+		fmt.Println(ui.RenderSuccess("No pending items to review — all caught up! 🎉"))
+		fmt.Println()
 		prompter.DisplayWorkItems(previousNote.PendingWork, previousNote.CompletedWork)
 		return nil
 	}
 
-	fmt.Println("Review pending items:\n")
+	fmt.Println(ui.HeaderStyle.Render("Review Pending Items"))
+	fmt.Println(ui.MutedStyle.Render("Mark items you've completed"))
+	fmt.Println()
 
 	completedIndices, err := prompter.SelectPendingItems(previousNote.PendingWork)
 	if err != nil {
@@ -52,7 +60,9 @@ func runReview(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(completedIndices) == 0 {
-		prompter.DisplayMessage("No items marked as completed.")
+		fmt.Println()
+		fmt.Println(ui.MutedStyle.Render("No items marked as completed."))
+		fmt.Println()
 		return nil
 	}
 
@@ -75,7 +85,10 @@ func runReview(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error saving note: %w", err)
 	}
 
-	prompter.DisplaySuccess(fmt.Sprintf("Marked %d item(s) as completed.", len(completedIndices)))
+	fmt.Println()
+	fmt.Println(ui.RenderDivider(50))
+	fmt.Println(ui.RenderSuccess(fmt.Sprintf("Marked %d item(s) as completed!", len(completedIndices))))
+	fmt.Println()
 
 	// Show updated state
 	prompter.DisplayWorkItems(previousNote.PendingWork, previousNote.CompletedWork)

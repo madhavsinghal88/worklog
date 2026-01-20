@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sandepten/work-obsidian-noter/internal/notes"
+	"github.com/sandepten/work-obsidian-noter/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +29,11 @@ func init() {
 func runStart(cmd *cobra.Command, args []string) error {
 	today := time.Now().Truncate(24 * time.Hour)
 
-	fmt.Printf("Starting daily workflow for %s...\n\n", today.Format("2006-01-02"))
+	fmt.Println()
+	fmt.Println(ui.TitleStyle.Render("🚀 Daily Workflow"))
+	fmt.Println(ui.MutedStyle.Render(today.Format("Monday, January 2, 2006")))
+	fmt.Println(ui.RenderDivider(50))
+	fmt.Println()
 
 	// Check if today's note already exists
 	todayNote, err := parser.FindTodayNote(today)
@@ -45,18 +50,22 @@ func runStart(cmd *cobra.Command, args []string) error {
 	// Create today's note if it doesn't exist
 	if todayNote == nil {
 		todayNote = writer.CreateTodayNote(today)
-		fmt.Printf("Creating new note: %s\n\n", filepath.Base(todayNote.FilePath))
+		fmt.Println(ui.RenderSuccess(fmt.Sprintf("Created new note: %s", filepath.Base(todayNote.FilePath))))
 	} else {
-		fmt.Printf("Today's note already exists: %s\n\n", filepath.Base(todayNote.FilePath))
+		fmt.Println(ui.InfoStyle.Render(fmt.Sprintf("ℹ Today's note already exists: %s", filepath.Base(todayNote.FilePath))))
 	}
+	fmt.Println()
 
 	// Process previous note if it exists
 	if previousNote != nil {
-		fmt.Printf("Found previous note: %s (Date: %s)\n\n", filepath.Base(previousNote.FilePath), previousNote.Date.Format("2006-01-02"))
+		fmt.Println(ui.InfoStyle.Render(fmt.Sprintf("📄 Found previous note: %s", filepath.Base(previousNote.FilePath))))
+		fmt.Println()
 
 		// Review pending items from previous note
 		if previousNote.HasPendingWork() {
-			fmt.Println("Reviewing pending items from previous note...\n")
+			fmt.Println(ui.HeaderStyle.Render("Review Pending Items"))
+			fmt.Println(ui.MutedStyle.Render("Mark items you completed since last session"))
+			fmt.Println()
 
 			completedIndices, err := prompter.SelectPendingItems(previousNote.PendingWork)
 			if err != nil {
@@ -76,7 +85,6 @@ func runStart(cmd *cobra.Command, args []string) error {
 			}
 
 			// Remaining pending items go to today's note
-			remainingPending := []notes.WorkItem{}
 			completedSet := make(map[int]bool)
 			for _, idx := range completedIndices {
 				completedSet[idx] = true
@@ -84,7 +92,6 @@ func runStart(cmd *cobra.Command, args []string) error {
 
 			for i, item := range previousNote.PendingWork {
 				if !completedSet[i] {
-					remainingPending = append(remainingPending, item)
 					// Add to today's pending
 					todayNote.AddPendingItem(item.Text)
 				}
@@ -92,22 +99,30 @@ func runStart(cmd *cobra.Command, args []string) error {
 
 			// Update previous note - clear pending (items either completed or moved)
 			previousNote.PendingWork = []notes.WorkItem{}
+
+			if len(completedIndices) > 0 {
+				fmt.Println()
+				fmt.Println(ui.RenderSuccess(fmt.Sprintf("Marked %d item(s) as completed", len(completedIndices))))
+			}
 		}
 
 		// Generate summary if there's completed work
 		if previousNote.HasCompletedWork() {
-			fmt.Println("\nGenerating AI summary of completed work...")
+			fmt.Println()
+			fmt.Println(ui.HeaderStyle.Render("AI Summary"))
+			fmt.Println(ui.MutedStyle.Render("Generating summary of completed work..."))
 
 			// Test connection first
 			if err := aiClient.TestConnection(); err != nil {
-				fmt.Printf("Warning: Could not connect to OpenCode server: %v\n", err)
-				fmt.Println("Skipping AI summary generation.")
+				fmt.Println(ui.RenderWarning(fmt.Sprintf("Could not connect to OpenCode server: %v", err)))
+				fmt.Println(ui.MutedStyle.Render("Skipping AI summary generation."))
 			} else {
 				summary, err := aiClient.SummarizeWorkItems(previousNote.CompletedWork)
 				if err != nil {
-					fmt.Printf("Warning: Could not generate summary: %v\n", err)
+					fmt.Println(ui.RenderWarning(fmt.Sprintf("Could not generate summary: %v", err)))
 				} else {
-					fmt.Printf("\nSummary: %s\n\n", summary)
+					fmt.Println()
+					prompter.DisplaySummaryBox("Summary", summary)
 
 					// Update both notes with the summary
 					previousNote.Summary = summary
@@ -120,22 +135,27 @@ func runStart(cmd *cobra.Command, args []string) error {
 		if err := writer.WriteNote(previousNote); err != nil {
 			return fmt.Errorf("error saving previous note: %w", err)
 		}
-		fmt.Printf("Updated previous note: %s\n", filepath.Base(previousNote.FilePath))
+		fmt.Println(ui.InfoStyle.Render(fmt.Sprintf("ℹ Updated: %s", filepath.Base(previousNote.FilePath))))
 	} else {
-		fmt.Println("No previous notes found. Starting fresh!")
+		fmt.Println(ui.MutedStyle.Render("No previous notes found. Starting fresh!"))
 	}
 
 	// Save today's note
 	if err := writer.WriteNote(todayNote); err != nil {
 		return fmt.Errorf("error saving today's note: %w", err)
 	}
-	fmt.Printf("Saved today's note: %s\n", filepath.Base(todayNote.FilePath))
+
+	fmt.Println()
+	fmt.Println(ui.RenderDivider(50))
+	fmt.Println()
+	fmt.Println(ui.TitleStyle.Render("📋 Today's Note"))
 
 	// Show current state
-	fmt.Println("\n--- Today's Note ---")
 	prompter.DisplayWorkItems(todayNote.PendingWork, todayNote.CompletedWork)
 
-	fmt.Println("Daily workflow complete! Use 'worklog add \"task\"' to add new items.")
+	fmt.Println(ui.RenderSuccess("Daily workflow complete!"))
+	fmt.Println(ui.MutedStyle.Render("Use 'worklog add \"task\"' to add new items"))
+	fmt.Println()
 
 	return nil
 }

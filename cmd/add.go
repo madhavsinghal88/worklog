@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sandepten/work-obsidian-noter/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +33,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 
 	if todayNote == nil {
 		todayNote = writer.CreateTodayNote(today)
-		fmt.Println("Creating today's note...")
+		fmt.Println(ui.InfoStyle.Render("Creating today's note..."))
 	}
 
 	// Add the new item
@@ -43,6 +44,12 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error saving note: %w", err)
 	}
 
-	prompter.DisplaySuccess(fmt.Sprintf("Added pending item: %s", taskText))
+	fmt.Println()
+	fmt.Println(ui.RenderSuccess("Task added successfully!"))
+	fmt.Println(ui.RenderPendingItem(len(todayNote.PendingWork), taskText))
+	fmt.Println()
+	fmt.Println(ui.MutedStyle.Render(fmt.Sprintf("  📋 You now have %d pending task(s)", len(todayNote.PendingWork))))
+	fmt.Println()
+
 	return nil
 }

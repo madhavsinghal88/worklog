@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sandepten/work-obsidian-noter/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -28,21 +29,34 @@ func runSummarize(cmd *cobra.Command, args []string) error {
 	}
 
 	if todayNote == nil {
-		prompter.DisplayError("No note found for today. Use 'worklog start' to create one.")
+		prompter.DisplayWarning("No note found for today. Use 'worklog start' to create one.")
 		return nil
 	}
 
 	if !todayNote.HasCompletedWork() {
-		prompter.DisplayMessage("No completed work items to summarize.")
+		fmt.Println()
+		fmt.Println(ui.MutedStyle.Render("No completed work items to summarize."))
+		fmt.Println(ui.MutedStyle.Render("Use 'worklog done' to mark items as completed first."))
+		fmt.Println()
 		return nil
 	}
 
-	fmt.Printf("Completed work for %s:\n", today.Format("2006-01-02"))
-	for i, item := range todayNote.CompletedWork {
-		fmt.Printf("  %d. %s\n", i+1, item.Text)
-	}
+	fmt.Println()
+	fmt.Println(ui.TitleStyle.Render("📊 Work Summary"))
+	fmt.Println(ui.MutedStyle.Render(today.Format("Monday, January 2, 2006")))
+	fmt.Println(ui.RenderDivider(50))
+	fmt.Println()
 
-	fmt.Println("\nGenerating AI summary...")
+	// Display completed work
+	fmt.Println(ui.HeaderStyle.Render("Completed Work"))
+	for i, item := range todayNote.CompletedWork {
+		fmt.Println(ui.RenderCompletedItem(i+1, item.Text))
+	}
+	fmt.Println()
+
+	// Generate AI summary
+	fmt.Println(ui.InfoStyle.Render("🤖 Generating AI summary..."))
+	fmt.Println()
 
 	// Test connection first
 	if err := aiClient.TestConnection(); err != nil {
@@ -54,8 +68,7 @@ func runSummarize(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("could not generate summary: %w", err)
 	}
 
-	fmt.Println("\n--- Summary ---")
-	fmt.Println(summary)
+	prompter.DisplaySummaryBox("AI-Generated Summary", summary)
 
 	return nil
 }

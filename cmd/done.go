@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sandepten/work-obsidian-noter/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -28,16 +29,22 @@ func runDone(cmd *cobra.Command, args []string) error {
 	}
 
 	if todayNote == nil {
-		prompter.DisplayError("No note found for today. Use 'worklog start' to create one.")
+		prompter.DisplayWarning("No note found for today. Use 'worklog start' to create one.")
 		return nil
 	}
 
 	if !todayNote.HasPendingWork() {
-		prompter.DisplayMessage("No pending items to mark as done.")
+		fmt.Println()
+		fmt.Println(ui.RenderSuccess("No pending items — you're all caught up! 🎉"))
+		fmt.Println()
 		return nil
 	}
 
-	fmt.Println("Select items to mark as completed:")
+	fmt.Println()
+	fmt.Println(ui.TitleStyle.Render("✓ Mark Tasks as Done"))
+	fmt.Println(ui.MutedStyle.Render("Select which tasks you've completed"))
+	fmt.Println(ui.RenderDivider(50))
+	fmt.Println()
 
 	completedIndices, err := prompter.SelectPendingItems(todayNote.PendingWork)
 	if err != nil {
@@ -45,7 +52,9 @@ func runDone(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(completedIndices) == 0 {
-		prompter.DisplayMessage("No items marked as completed.")
+		fmt.Println()
+		fmt.Println(ui.MutedStyle.Render("No items marked as completed."))
+		fmt.Println()
 		return nil
 	}
 
@@ -60,7 +69,10 @@ func runDone(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error saving note: %w", err)
 	}
 
-	prompter.DisplaySuccess(fmt.Sprintf("Marked %d item(s) as completed.", len(completedIndices)))
+	fmt.Println()
+	fmt.Println(ui.RenderDivider(50))
+	fmt.Println(ui.RenderSuccess(fmt.Sprintf("Marked %d item(s) as completed!", len(completedIndices))))
+	fmt.Println()
 
 	// Show updated state
 	prompter.DisplayWorkItems(todayNote.PendingWork, todayNote.CompletedWork)

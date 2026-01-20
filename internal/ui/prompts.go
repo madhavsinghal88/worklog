@@ -2,7 +2,9 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/manifoldco/promptui"
 	"github.com/sandepten/work-obsidian-noter/internal/notes"
 )
@@ -48,7 +50,8 @@ func (p *Prompter) SelectPendingItems(items []notes.WorkItem) ([]int, error) {
 
 	var selectedIndices []int
 
-	fmt.Println("\nReview pending items (press 'q' when done):")
+	fmt.Println(RenderInfo("Review pending items:"))
+	fmt.Println()
 
 	for i, item := range items {
 		completed, err := p.ConfirmCompletion(item)
@@ -81,6 +84,24 @@ func (p *Prompter) PromptForNewItem() (string, error) {
 	}
 
 	return result, nil
+}
+
+// PromptForTaskInLoop prompts for a task and returns it with a flag indicating if interrupted
+func (p *Prompter) PromptForTaskInLoop(taskNumber int) (string, bool, error) {
+	label := PromptStyle.Render(fmt.Sprintf("Task #%d", taskNumber))
+	prompt := promptui.Prompt{
+		Label: label,
+	}
+
+	result, err := prompt.Run()
+	if err != nil {
+		if err == promptui.ErrInterrupt {
+			return "", true, nil // Interrupted
+		}
+		return "", false, err
+	}
+
+	return strings.TrimSpace(result), false, nil
 }
 
 // ConfirmAction asks for a yes/no confirmation
@@ -116,39 +137,108 @@ func (p *Prompter) SelectFromList(label string, items []string) (int, error) {
 	return index, nil
 }
 
-// DisplayWorkItems shows a formatted list of work items
+// DisplayWorkItems shows a formatted list of work items with modern styling
 func (p *Prompter) DisplayWorkItems(pending, completed []notes.WorkItem) {
-	fmt.Println("\n--- Pending Work ---")
+	// Pending section
+	pendingHeader := HeaderStyle.Render("Pending") + " " + RenderBadge(len(pending), PendingBadgeStyle)
+	fmt.Println(pendingHeader)
+
 	if len(pending) == 0 {
-		fmt.Println("  No pending items")
+		fmt.Println(RenderEmptyState("  No pending items — you're all caught up!"))
 	} else {
+		var pendingItems []string
 		for i, item := range pending {
-			fmt.Printf("  %d. [ ] %s\n", i+1, item.Text)
+			pendingItems = append(pendingItems, RenderPendingItem(i+1, item.Text))
 		}
+		content := strings.Join(pendingItems, "\n")
+		fmt.Println(PendingCardStyle.Render(content))
 	}
 
-	fmt.Println("\n--- Completed Work ---")
+	// Completed section
+	completedHeader := HeaderStyle.Render("Done") + " " + RenderBadge(len(completed), CompletedBadgeStyle)
+	fmt.Println(completedHeader)
+
 	if len(completed) == 0 {
-		fmt.Println("  No completed items")
+		fmt.Println(RenderEmptyState("  No completed items yet"))
 	} else {
+		var completedItems []string
 		for i, item := range completed {
-			fmt.Printf("  %d. [x] %s\n", i+1, item.Text)
+			completedItems = append(completedItems, RenderCompletedItem(i+1, item.Text))
 		}
+		content := strings.Join(completedItems, "\n")
+		fmt.Println(CompletedCardStyle.Render(content))
 	}
-	fmt.Println()
+}
+
+// DisplayPendingOnly shows only pending work items with modern styling
+func (p *Prompter) DisplayPendingOnly(pending []notes.WorkItem) {
+	// Pending section header
+	pendingHeader := HeaderStyle.Render("Pending") + " " + RenderBadge(len(pending), PendingBadgeStyle)
+	fmt.Println(pendingHeader)
+
+	if len(pending) == 0 {
+		fmt.Println(RenderEmptyState("  No pending items — you're all caught up!"))
+	} else {
+		var pendingItems []string
+		for i, item := range pending {
+			pendingItems = append(pendingItems, RenderPendingItem(i+1, item.Text))
+		}
+		content := strings.Join(pendingItems, "\n")
+		fmt.Println(PendingCardStyle.Render(content))
+	}
 }
 
 // DisplayMessage shows a message to the user
 func (p *Prompter) DisplayMessage(message string) {
-	fmt.Println(message)
+	fmt.Println(RenderInfo(message))
 }
 
 // DisplayError shows an error message
 func (p *Prompter) DisplayError(message string) {
-	fmt.Printf("Error: %s\n", message)
+	fmt.Println(RenderError(message))
 }
 
 // DisplaySuccess shows a success message
 func (p *Prompter) DisplaySuccess(message string) {
-	fmt.Printf("Success: %s\n", message)
+	fmt.Println(RenderSuccess(message))
+}
+
+// DisplayWarning shows a warning message
+func (p *Prompter) DisplayWarning(message string) {
+	fmt.Println(RenderWarning(message))
+}
+
+// DisplayTitle shows a styled title
+func (p *Prompter) DisplayTitle(title string) {
+	fmt.Println(RenderTitle(title))
+}
+
+// DisplayHeader shows a styled header
+func (p *Prompter) DisplayHeader(header string) {
+	fmt.Println(RenderHeader(header))
+}
+
+// DisplaySummaryBox shows a summary in a styled box
+func (p *Prompter) DisplaySummaryBox(title, content string) {
+	fmt.Println(RenderSummary(title, content))
+}
+
+// DisplayDateHeader shows a styled date header
+func (p *Prompter) DisplayDateHeader(date string) {
+	header := TitleStyle.Render("📅 " + date)
+	fmt.Println(header)
+}
+
+// DisplayStats shows task statistics
+func (p *Prompter) DisplayStats(pending, completed int) {
+	stats := lipgloss.JoinHorizontal(
+		lipgloss.Center,
+		MutedStyle.Render("Tasks: "),
+		RenderBadge(pending, PendingBadgeStyle),
+		MutedStyle.Render(" pending  "),
+		RenderBadge(completed, CompletedBadgeStyle),
+		MutedStyle.Render(" completed"),
+	)
+	fmt.Println(stats)
+	fmt.Println()
 }
