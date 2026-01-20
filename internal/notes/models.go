@@ -98,3 +98,17 @@ func (n *Note) MarkItemCompleted(index int) {
 		n.PendingWork = append(n.PendingWork[:index], n.PendingWork[index+1:]...)
 	}
 }
+
+// RemovePendingItem removes a pending item at the given index
+func (n *Note) RemovePendingItem(index int) {
+	if index >= 0 && index < len(n.PendingWork) {
+		n.PendingWork = append(n.PendingWork[:index], n.PendingWork[index+1:]...)
+	}
+}
+
+// RemoveCompletedItem removes a completed item at the given index
+func (n *Note) RemoveCompletedItem(index int) {
+	if index >= 0 && index < len(n.CompletedWork) {
+		n.CompletedWork = append(n.CompletedWork[:index], n.CompletedWork[index+1:]...)
+	}
+}

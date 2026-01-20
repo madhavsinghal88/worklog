@@ -10,7 +10,8 @@ import (
 // Config holds the application configuration
 type Config struct {
 	WorkNotesLocation string
-	WorkplaceName     string
+	WorkplaceName     string   // Default workplace (for backward compatibility)
+	Workplaces        []string // List of available workplaces
 	OpenCodeServer    string
 	AIProvider        string
 	AIModel           string
@@ -22,9 +23,29 @@ func Load() (*Config, error) {
 	configPath := getConfigPath()
 	loadConfigFile(configPath)
 
+	workplaceName := getEnv("WORKPLACE_NAME", "Work")
+	workplacesStr := getEnv("WORKPLACES", "")
+
+	// Parse workplaces list
+	var workplaces []string
+	if workplacesStr != "" {
+		for _, wp := range strings.Split(workplacesStr, ",") {
+			wp = strings.TrimSpace(wp)
+			if wp != "" {
+				workplaces = append(workplaces, wp)
+			}
+		}
+	}
+
+	// If no workplaces defined, use the default workplace name
+	if len(workplaces) == 0 {
+		workplaces = []string{workplaceName}
+	}
+
 	cfg := &Config{
 		WorkNotesLocation: getEnv("WORK_NOTES_LOCATION", "~/Documents/obsidian-notes/Inbox/work"),
-		WorkplaceName:     getEnv("WORKPLACE_NAME", "Work"),
+		WorkplaceName:     workplaceName,
+		Workplaces:        workplaces,
 		OpenCodeServer:    getEnv("OPENCODE_SERVER", "http://127.0.0.1:4096"),
 		AIProvider:        getEnv("AI_PROVIDER", "github-copilot"),
 		AIModel:           getEnv("AI_MODEL", "claude-sonnet-4"),
